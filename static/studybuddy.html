@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyBuddy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --panel: #ffffff;
+    --border: #eaecf2;
+    --text: #1c2130;
+    --subtext: #8b91a3;
+    --muted-bg: #f2f4fa;
+    --accent: #4a6bff;
+    --accent-dark: #3854e0;
+    --accent-light: #c9d5ff;
+    --input-border: #e2e5ee;
+    --row-border: #f2f4fa;
+    --done-color: #b0b4c2;
+  }
+  body.dark {
+    --bg: #121420;
+    --panel: #1a1d2b;
+    --border: #2a2e40;
+    --text: #eef0f8;
+    --subtext: #9096ab;
+    --muted-bg: #23273a;
+    --accent: #6b86ff;
+    --accent-dark: #8298ff;
+    --accent-light: #33396b;
+    --input-border: #333850;
+    --row-border: #262b3d;
+    --done-color: #565c74;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+  body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; transition: background .2s, color .2s; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 250px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 16px;
+    flex-shrink: 0;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; margin-bottom: 26px; color: var(--text); }
+  .brand span { color: var(--accent); }
+
+  .nav-section-label { font-size: 11px; letter-spacing: .05em; color: var(--subtext); margin: 14px 4px 8px; font-weight: 600; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--subtext);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--muted-bg); }
+  .nav-item.active { background: var(--accent); color: white; }
+  .nav-item .icon { font-size: 16px; width: 18px; text-align: center; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .placeholder-card {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 60px 32px;
+    border: 1px solid var(--border);
+    text-align: center;
+    color: var(--subtext);
+  }
+  .placeholder-card .big-icon { font-size: 40px; margin-bottom: 12px; }
+  .placeholder-card h2 { color: var(--text); font-size: 18px; margin-bottom: 6px; }
+
+  .add-new-btn {
+    background: linear-gradient(135deg, #5b7cff, #4a6bff);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .darkmode-toggle {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--muted-bg);
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .switch {
+    width: 38px; height: 22px;
+    background: #cfd4e4;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .switch.on { background: var(--accent); }
+  .switch .knob {
+    width: 18px; height: 18px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px; left: 2px;
+    transition: left .2s;
+  }
+  .switch.on .knob { left: 18px; }
+
+  .sidebar-spacer { flex: 1; }
+
+  /* ---------- Main ---------- */
+  .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar .datetime { font-weight: 700; font-size: 15px; display: flex; gap: 10px; align-items: baseline; }
+  .topbar .datetime span.sub { font-weight: 400; color: var(--subtext); font-size: 13px; }
+
+  .searchbar {
+    flex: 1;
+    max-width: 460px;
+    margin: 0 24px;
+    display: flex;
+    align-items: center;
+    background: var(--muted-bg);
+    border-radius: 24px;
+    padding: 8px 16px;
+    gap: 10px;
+  }
+  .searchbar input { border: none; background: none; outline: none; flex: 1; font-size: 14px; color: var(--text); }
+  .searchbar .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; flex-shrink:0; }
+
+  .user-chip { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--subtext); }
+  .avatar { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+
+  .content { padding: 28px; }
+  .content h1 { font-size: 26px; margin-bottom: 4px; }
+  .content .subtext { color: var(--subtext); margin-bottom: 24px; font-size: 14px; }
+
+  /* ---------- Dashboard shell ---------- */
+  .dashboard-shell {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 28px 32px;
+    border: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 24px;
+    align-items: start;
+  }
+  .dashboard-shell h1 { font-size: 24px; margin-bottom: 6px; }
+  .dashboard-shell .subtext { color: var(--subtext); font-size: 14px; margin-bottom: 22px; }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: var(--subtext);
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .empty-line { color: var(--subtext); font-size: 14px; margin-bottom: 16px; }
+
+  .prompt-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--muted-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .prompt-card .left { display: flex; align-items: center; gap: 14px; }
+  .prompt-card .icon-box {
+    width: 34px; height: 34px;
+    background: var(--panel);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    flex-shrink: 0;
+  }
+  .prompt-card .title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .prompt-card .desc { font-size: 13px; color: var(--subtext); }
+  .prompt-card .action { color: var(--accent); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+
+  .streak-card {
+    background: linear-gradient(160deg, #5b7cff, #3854e0);
+    border-radius: 14px;
+    padding: 22px 20px;
+    color: white;
+    text-align: left;
+  }
+  .streak-card .day { font-size: 34px; font-weight: 800; margin-bottom: 10px; }
+  .streak-card .desc { font-size: 13px; opacity: 0.9; line-height: 1.4; }
+
+  /* ---------- Cards ---------- */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+  .card {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(20,20,50,0.05);
+    border: 1px solid var(--border);
+  }
+  .card h2 { font-size: 15px; margin-bottom: 14px; color: var(--text); }
+  .full-width { grid-column: 1 / -1; }
+
+  /* Task list */
+  .task-form { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .task-form input[type="text"] {
+    flex: 1;
+    min-width: 140px;
+    padding: 10px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .task-form input[type="date"] {
+    padding: 10px 10px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .task-form button, .timer-controls button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .task-form button:hover, .timer-controls button:hover { background: var(--accent-dark); }
+  .timer-controls button.secondary { background: var(--muted-bg); color: var(--text); }
+
+  .task-list-el { list-style: none; }
+  .task-list-el li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--row-border);
+    font-size: 14px;
+    gap: 10px;
+  }
+  .task-list-el li .task-meta { display: flex; flex-direction: column; }
+  .task-list-el li .task-date { font-size: 11px; color: var(--subtext); }
+  .task-list-el li.done .task-text { text-decoration: line-through; color: var(--done-color); }
+  .task-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    margin-left: 8px;
+  }
+  .empty-note { color: var(--subtext); font-size: 13px; padding: 10px 4px; }
+
+  /* Pomodoro */
+  .timer-box { text-align: center; }
+  .timer-mode-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--muted-bg);
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .timer-display-el {
+    font-size: 46px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 6px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-sessions { font-size: 12px; color: var(--subtext); margin-bottom: 14px; }
+  .timer-controls { display: flex; justify-content: center; gap: 10px; }
+
+  /* Calendar */
+  .calendar-wrap { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-header .title { font-weight: 700; font-size: 15px; }
+  .cal-nav button {
+    background: var(--muted-bg);
+    border: none;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { text-align: center; font-size: 11px; color: var(--subtext); font-weight: 700; padding-bottom: 6px; }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    position: relative;
+    color: var(--text);
+  }
+  .cal-day:hover { background: var(--muted-bg); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.today { border: 1.5px solid var(--accent); font-weight: 700; }
+  .cal-day.selected { background: var(--accent); color: white; }
+  .cal-day .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin-top: 2px; }
+  .cal-day.selected .dot { background: white; }
+
+  .cal-side-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+
+  #darkModeIcon { font-size: 14px; }
+
+  /* ---------- Timer stats & session log ---------- */
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+  .stat-box {
+    background: var(--muted-bg);
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-box .num { font-size: 22px; font-weight: 800; color: var(--accent); }
+  .stat-box .lbl { font-size: 11px; color: var(--subtext); margin-top: 4px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .session-log { list-style: none; max-height: 260px; overflow-y: auto; margin-top: 8px; }
+  .session-log li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 4px; border-bottom: 1px solid var(--row-border); font-size: 13px;
+  }
+  .session-log .s-type { font-weight: 700; color: var(--text); }
+  .session-log .s-time { color: var(--subtext); font-size: 12px; }
+  .session-log .s-dur { color: var(--accent); font-weight: 700; }
+
+  /* ---------- Games ---------- */
+  .game-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .game-tab-btn {
+    background: var(--muted-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .game-tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .game-panel { display: none; }
+  .game-panel.active { display: block; }
+
+  .game-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .game-info .score { font-size: 13px; color: var(--subtext); }
+  .game-info button {
+    background: var(--accent); color: white; border: none; padding: 8px 14px;
+    border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+
+  /* Tic Tac Toe */
+  .ttt-grid { display: grid; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); gap: 6px; justify-content: center; }
+  .ttt-cell {
+    background: var(--muted-bg); border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800; cursor: pointer; color: var(--accent);
+  }
+  .ttt-cell:hover { background: var(--accent-light); }
+
+  /* Memory Match */
+  .memory-grid { display: grid; grid-template-columns: repeat(4, 70px); gap: 8px; justify-content: center; }
+  .memory-card {
+    width: 70px; height: 70px; background: var(--accent); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 26px;
+    cursor: pointer; color: transparent; transition: transform .15s;
+    user-select: none;
+  }
+  .memory-card.flipped, .memory-card.matched { background: var(--muted-bg); color: var(--text); }
+  .memory-card.matched { opacity: 0.5; }
+
+  /* RPS */
+  .rps-choices { display: flex; gap: 14px; justify-content: center; margin: 20px 0; }
+  .rps-choices button {
+    font-size: 34px; background: var(--muted-bg); border: 2px solid var(--border);
+    border-radius: 14px; width: 74px; height: 74px; cursor: pointer;
+  }
+  .rps-choices button:hover { border-color: var(--accent); }
+  .rps-result { text-align: center; font-size: 15px; font-weight: 700; min-height: 24px; margin-top: 6px; }
+
+  /* Snake / 2048 canvas containers */
+  .game-canvas-wrap { display: flex; justify-content: center; }
+  canvas.game-canvas { background: var(--muted-bg); border-radius: 10px; }
+
+  /* 2048 */
+  .g2048-grid { display: grid; grid-template-columns: repeat(4, 70px); grid-template-rows: repeat(4, 70px); gap: 8px; justify-content: center; background: var(--border); padding: 8px; border-radius: 10px; width: max-content; margin: 0 auto; }
+  .g2048-cell {
+    width: 70px; height: 70px; border-radius: 8px; background: var(--muted-bg);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--text);
+  }
+  .game-hint { text-align: center; font-size: 12px; color: var(--subtext); margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ---------- Sidebar ---------- -->
+<div class="sidebar">
+  <div class="brand">🎓 Study<span>Buddy</span></div>
+
+  <div class="nav-section-label">Your Studies</div>
+  <div class="nav-item active" data-view="dashboard" onclick="switchView('dashboard', this)"><span class="icon">🏠</span> Dashboard</div>
+  <div class="nav-item" data-view="calendar" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
+  <div class="nav-item" data-view="academic" onclick="switchView('academic', this)"><span class="icon">🎓</span> Academic</div>
+
+  <div class="nav-section-label">Tools</div>
+  <div class="nav-item" data-view="tasks" onclick="switchView('tasks', this)"><span class="icon">📝</span> Tasks</div>
+  <div class="nav-item" data-view="timer" onclick="switchView('timer', this)"><span class="icon">⏱️</span> Focus Timer</div>
+  <div class="nav-item" data-view="analytics" onclick="switchView('analytics', this)"><span class="icon">📊</span> Analytics</div>
+  <div class="nav-item" data-view="games" onclick="switchView('games', this)"><span class="icon">🎮</span> Games</div>
+
+  <div class="sidebar-spacer"></div>
+
+  <div class="darkmode-toggle">
+    <span><span id="darkModeIcon">🌙</span> Dark Mode</span>
+    <div class="switch" id="darkSwitch" onclick="toggleDarkMode()"><div class="knob"></div></div>
+  </div>
+  <div style="height:10px"></div>
+  <button class="add-new-btn" onclick="switchView('tasks', document.querySelector('[data-view=tasks]'))">+ Add New</button>
+</div>
+
+<!-- ---------- Main ---------- -->
+<div class="main">
+  <div class="topbar">
+    <div class="datetime">
+      <span id="timeNow">--:--</span>
+      <span class="sub" id="dateNow">Loading...</span>
+    </div>
+    <div class="searchbar">
+      <div class="dot">✨</div>
+      <input type="text" placeholder="Ask StudyBuddy anything...">
+    </div>
+    <div class="user-chip">
+      <div class="avatar">S</div>
+      <span>student@studybuddy.com</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== Dashboard View ===== -->
+    <div class="view active" id="view-dashboard">
+      <div class="dashboard-shell">
+        <div>
+          <h1 id="greeting">Good evening 👋</h1>
+          <p class="subtext" id="daySummary">Here's your day. You've got 0 tasks due.</p>
+
+          <div class="section-label">Today's Tasks</div>
+          <p class="empty-line" id="dashTodayEmpty">No tasks due today.</p>
+
+          <div class="prompt-card">
+            <div class="left">
+              <div class="icon-box">📝</div>
+              <div>
+                <div class="title">Add a task</div>
+                <div class="desc">An essay, some reading, revision — whatever's next.</div>
+              </div>
+            </div>
+            <div class="action" onclick="switchView('tasks', document.querySelector('[data-view=tasks]'))">Add task</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:10px;">Streak</div>
+          <div class="streak-card">
+            <div class="day">Day <span id="streakDay">0</span></div>
+            <div class="desc">Complete a task today to keep it going 🔥</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>All Tasks</h2>
+          <div class="task-form">
+            <input type="text" class="taskInputEl" placeholder="Add a study task...">
+            <input type="date" class="taskDateEl">
+            <button onclick="addTask(this)">Add</button>
+          </div>
+          <ul class="taskListEl task-list-el"></ul>
+        </div>
+
+        <div class="card timer-box">
+          <h2>Focus Timer</h2>
+          <div class="timer-mode-label modeLabelEl">Work Session</div>
+          <div class="timer-display-el">25:00</div>
+          <div class="timer-sessions sessionCountEl">Sessions completed: 0</div>
+          <div class="timer-controls">
+            <button onclick="startTimer()">Start</button>
+            <button class="secondary" onclick="pauseTimer()">Pause</button>
+            <button class="secondary" onclick="resetTimer()">Reset</button>
+          </div>
+        </div>
+
+        <div class="card full-width">
+          <h2>Task Completion</h2>
+          <canvas class="completionChartEl" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Tasks View ===== -->
+    <div class="view" id="view-tasks">
+      <h1>Tasks</h1>
+      <p class="subtext">Everything you need to get done.</p>
+      <div class="card">
+        <div class="task-form">
+          <input type="text" class="taskInputEl" placeholder="Add a study task...">
+          <input type="date" class="taskDateEl">
+          <button onclick="addTask(this)">Add</button>
+        </div>
+        <ul class="taskListEl task-list-el"></ul>
+      </div>
+    </div>
+
+    <!-- ===== Focus Timer View ===== -->
+    <div class="view" id="view-timer">
+      <h1>Focus Timer</h1>
+      <p class="subtext">25 min work → 5 min break, with a 15 min long break every 4 sessions.</p>
+
+      <div class="grid" style="margin-top:0;">
+        <div class="card timer-box">
+          <h2>Pomodoro</h2>
+          <div class="timer-mode-label modeLabelEl">Work Session</div>
+          <div class="timer-display-el">25:00</div>
+          <div class="timer-sessions sessionCountEl">Sessions completed: 0</div>
+          <div class="timer-controls">
+            <button onclick="startTimer()">Start</button>
+            <button class="secondary" onclick="pauseTimer()">Pause</button>
+            <button class="secondary" onclick="resetTimer()">Reset</button>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-box">
+              <div class="num" id="totalStudyTimeStat">0h 0m</div>
+              <div class="lbl">Total studied</div>
+            </div>
+            <div class="stat-box">
+              <div class="num" id="todaySessionsStat">0</div>
+              <div class="lbl">Sessions today</div>
+            </div>
+            <div class="stat-box">
+              <div class="num" id="avgSessionStat">0m</div>
+              <div class="lbl">Avg session</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Session History</h2>
+          <ul class="session-log" id="sessionLogEl"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Analytics View ===== -->
+    <div class="view" id="view-analytics">
+      <h1>Analytics</h1>
+      <p class="subtext">Completed vs not-completed tasks.</p>
+      <div class="grid" style="margin-top:0;">
+        <div class="card">
+          <h2>Task Completion</h2>
+          <canvas class="completionChartEl" height="90"></canvas>
+        </div>
+        <div class="card">
+          <h2>Tasks by Day</h2>
+          <canvas id="tasksByDayChart" height="90"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Calendar View ===== -->
+    <div class="view" id="view-calendar">
+      <h1>Calendar</h1>
+      <p class="subtext">Click a day to see tasks assigned to it.</p>
+      <div class="card">
+        <div class="calendar-wrap">
+          <div>
+            <div class="cal-header">
+              <div class="cal-nav"><button onclick="changeMonth(-1)">‹</button></div>
+              <div class="title" id="calTitle">Month Year</div>
+              <div class="cal-nav"><button onclick="changeMonth(1)">›</button></div>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+          <div>
+            <div class="cal-side-title" id="calSideTitle">Select a day</div>
+            <ul class="task-list-el" id="calDayTasks"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Games View ===== -->
+    <div class="view" id="view-games">
+      <h1>Games</h1>
+      <p class="subtext">Take a break when boredom hits.</p>
+
+      <div class="game-tabs">
+        <button class="game-tab-btn active" data-game="ttt" onclick="switchGame('ttt', this)">❌⭕ Tic Tac Toe</button>
+        <button class="game-tab-btn" data-game="memory" onclick="switchGame('memory', this)">🧠 Memory Match</button>
+        <button class="game-tab-btn" data-game="rps" onclick="switchGame('rps', this)">✊ Rock Paper Scissors</button>
+        <button class="game-tab-btn" data-game="snake" onclick="switchGame('snake', this)">🐍 Snake</button>
+        <button class="game-tab-btn" data-game="g2048" onclick="switchGame('g2048', this)">🔢 2048</button>
+      </div>
+
+      <div class="card">
+
+        <!-- Tic Tac Toe -->
+        <div class="game-panel active" id="game-ttt">
+          <div class="game-info">
+            <span class="score" id="tttStatus">Player X's turn</span>
+            <button onclick="resetTTT()">Restart</button>
+          </div>
+          <div class="ttt-grid" id="tttGrid"></div>
+          <p class="game-hint">2-player — take turns on the same screen.</p>
+        </div>
+
+        <!-- Memory Match -->
+        <div class="game-panel" id="game-memory">
+          <div class="game-info">
+            <span class="score" id="memoryStatus">Moves: 0</span>
+            <button onclick="resetMemory()">Restart</button>
+          </div>
+          <div class="memory-grid" id="memoryGrid"></div>
+        </div>
+
+        <!-- Rock Paper Scissors -->
+        <div class="game-panel" id="game-rps">
+          <div class="game-info">
+            <span class="score" id="rpsScore">You: 0 — Computer: 0</span>
+            <button onclick="resetRPS()">Reset Score</button>
+          </div>
+          <div class="rps-choices">
+            <button onclick="playRPS('✊')">✊</button>
+            <button onclick="playRPS('✋')">✋</button>
+            <button onclick="playRPS('✌️')">✌️</button>
+          </div>
+          <div class="rps-result" id="rpsResult">Pick one!</div>
+        </div>
+
+        <!-- Snake -->
+        <div class="game-panel" id="game-snake">
+          <div class="game-info">
+            <span class="score" id="snakeScore">Score: 0</span>
+            <button onclick="startSnake()">Restart</button>
+          </div>
+          <div class="game-canvas-wrap">
+            <canvas class="game-canvas" id="snakeCanvas" width="320" height="320"></canvas>
+          </div>
+          <p class="game-hint">Use arrow keys to move.</p>
+        </div>
+
+        <!-- 2048 -->
+        <div class="game-panel" id="game-g2048">
+          <div class="game-info">
+            <span class="score" id="g2048Score">Score: 0</span>
+            <button onclick="startG2048()">Restart</button>
+          </div>
+          <div class="g2048-grid" id="g2048Grid"></div>
+          <p class="game-hint">Use arrow keys to merge tiles.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== Academic View (placeholder) ===== -->
+    <div class="view" id="view-academic">
+      <h1>Academic</h1>
+      <p class="subtext">Courses, grades, and progress.</p>
+      <div class="placeholder-card">
+        <div class="big-icon">🎓</div>
+        <h2>No courses added yet</h2>
+        <p>Add your subjects to start tracking academic progress.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  /* =========================================================
+     STATE
+  ========================================================= */
+  let tasks = [];          // { id, text, date: 'YYYY-MM-DD', done }
+  let taskIdCounter = 1;
+
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  /* =========================================================
+     VIEW SWITCHING
+  ========================================================= */
+  function switchView(viewName, navEl) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + viewName).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (navEl) navEl.classList.add('active');
+    if (viewName === 'calendar') renderCalendar();
+  }
+
+  /* =========================================================
+     DARK MODE
+  ========================================================= */
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    document.getElementById('darkSwitch').classList.toggle('on', isDark);
+    document.getElementById('darkModeIcon').textContent = isDark ? '☀️' : '🌙';
+  }
+
+  /* =========================================================
+     CLOCK / GREETING / SUMMARY
+  ========================================================= */
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('timeNow').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.getElementById('dateNow').textContent = now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+    const hour = now.getHours();
+    const greeting = hour < 5 || hour >= 21 ? 'Good night 👋' : hour < 12 ? 'Good morning 👋' : hour < 18 ? 'Good afternoon 👋' : 'Good evening 👋';
+    document.getElementById('greeting').textContent = greeting;
+
+    const dayName = now.toLocaleDateString([], {weekday: 'long'});
+    const dueToday = tasks.filter(t => t.date === todayStr() && !t.done).length;
+    document.getElementById('daySummary').textContent =
+      `Here's your ${dayName}. You've got ${dueToday} task${dueToday === 1 ? '' : 's'} due today.`;
+
+    const todaysTasks = tasks.filter(t => t.date === todayStr());
+    document.getElementById('dashTodayEmpty').style.display = todaysTasks.length ? 'none' : 'block';
+
+    const doneToday = tasks.some(t => t.date === todayStr() && t.done);
+    document.getElementById('streakDay').textContent = doneToday ? 1 : 0;
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  /* =========================================================
+     TASKS
+  ========================================================= */
+  function renderTasks() {
+    const sorted = [...tasks].sort((a,b) => (a.date || '').localeCompare(b.date || ''));
+    document.querySelectorAll('.taskListEl').forEach(list => {
+      list.innerHTML = '';
+      if (sorted.length === 0) {
+        const p = document.createElement('li');
+        p.className = 'empty-note';
+        p.textContent = 'No tasks yet — add one above.';
+        list.appendChild(p);
+        return;
+      }
+      sorted.forEach(task => {
+        const li = document.createElement('li');
+        if (task.done) li.classList.add('done');
+        const dateLabel = task.date ? new Date(task.date + 'T00:00:00').toLocaleDateString([], {month:'short', day:'numeric'}) : 'No date';
+        li.innerHTML = `
+          <div class="task-meta">
+            <span class="task-text" style="cursor:pointer">${escapeHtml(task.text)}</span>
+            <span class="task-date">${dateLabel}</span>
+          </div>
+          <div class="task-actions">
+            <button title="Toggle done">✅</button>
+            <button title="Delete">🗑️</button>
+          </div>
+        `;
+        li.querySelector('.task-text').onclick = () => toggleTask(task.id);
+        const [doneBtn, delBtn] = li.querySelectorAll('.task-actions button');
+        doneBtn.onclick = () => toggleTask(task.id);
+        delBtn.onclick = () => deleteTask(task.id);
+        list.appendChild(li);
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function addTask(buttonEl) {
+    const form = buttonEl.closest('.task-form');
+    const textInput = form.querySelector('.taskInputEl');
+    const dateInput = form.querySelector('.taskDateEl');
+    const text = textInput.value.trim();
+    if (!text) { textInput.focus(); return; }
+    const date = dateInput.value || todayStr();
+    tasks.push({ id: taskIdCounter++, text, date, done: false });
+    textInput.value = '';
+    dateInput.value = '';
+    renderAll();
+    // TODO: POST to Flask backend /api/tasks
+  }
+
+  // Allow pressing Enter inside the text input to add the task
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.classList.contains('taskInputEl')) {
+      const btn = e.target.closest('.task-form').querySelector('button');
+      btn.click();
+    }
+  });
+
+  function toggleTask(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) t.done = !t.done;
+    renderAll();
+  }
+
+  function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    renderAll();
+  }
+
+  /* =========================================================
+     POMODORO TIMER
+  ========================================================= */
+  const DURATIONS = { work: 25*60, short: 5*60, long: 15*60 };
+  const MODE_LABELS = { work: 'Work Session', short: 'Short Break', long: 'Long Break' };
+  let mode = 'work';
+  let timeLeft = DURATIONS.work;
+  let timerInterval = null;
+  let sessionsCompleted = 0;
+  let sessionLog = []; // { mode, minutes, date: 'YYYY-MM-DD', timeLabel }
+
+  function updateTimerDisplay() {
+    const min = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+    const sec = String(timeLeft % 60).padStart(2, '0');
+    document.querySelectorAll('.timer-display-el').forEach(el => el.textContent = `${min}:${sec}`);
+    document.querySelectorAll('.modeLabelEl').forEach(el => el.textContent = MODE_LABELS[mode]);
+    document.querySelectorAll('.sessionCountEl').forEach(el => el.textContent = `Sessions completed: ${sessionsCompleted}`);
+  }
+
+  function startTimer() {
+    if (timerInterval) return;
+    timerInterval = setInterval(() => {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateTimerDisplay();
+      } else {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        handleSessionEnd();
+      }
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  function resetTimer() {
+    pauseTimer();
+    logPartialSession();
+    timeLeft = DURATIONS[mode];
+    updateTimerDisplay();
+    renderTimerStats();
+  }
+
+  function logPartialSession() {
+    const elapsedSeconds = DURATIONS[mode] - timeLeft;
+    const minutes = Math.round(elapsedSeconds / 60);
+    if (minutes < 1) return; // ignore anything under a minute
+    const now = new Date();
+    sessionLog.unshift({
+      mode: mode,
+      minutes: minutes,
+      date: todayStr(),
+      timeLabel: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+      partial: true
+    });
+    if (mode === 'work') sessionsCompleted++;
+    updateTimerDisplay();
+  }
+
+  function handleSessionEnd() {
+    const finishedMode = mode;
+    const now = new Date();
+    sessionLog.unshift({
+      mode: finishedMode,
+      minutes: Math.round(DURATIONS[finishedMode] / 60),
+      date: todayStr(),
+      timeLabel: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+      partial: false
+    });
+
+    if (mode === 'work') {
+      sessionsCompleted++;
+      mode = (sessionsCompleted % 4 === 0) ? 'long' : 'short';
+    } else {
+      mode = 'work';
+    }
+    timeLeft = DURATIONS[mode];
+    updateTimerDisplay();
+    renderTimerStats();
+    // TODO: POST completed session to backend for analytics
+  }
+
+  function renderTimerStats() {
+    const workSessions = sessionLog.filter(s => s.mode === 'work');
+    const totalMinutes = workSessions.reduce((sum, s) => sum + s.minutes, 0);
+    const hrs = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    const totalStat = document.getElementById('totalStudyTimeStat');
+    if (totalStat) totalStat.textContent = `${hrs}h ${mins}m`;
+
+    const todaySessions = workSessions.filter(s => s.date === todayStr());
+    const todayStat = document.getElementById('todaySessionsStat');
+    if (todayStat) todayStat.textContent = todaySessions.length;
+
+    const avgStat = document.getElementById('avgSessionStat');
+    if (avgStat) avgStat.textContent = workSessions.length ? Math.round(totalMinutes / workSessions.length) + 'm' : '0m';
+
+    const logEl = document.getElementById('sessionLogEl');
+    if (logEl) {
+      logEl.innerHTML = '';
+      if (sessionLog.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'empty-note';
+        li.textContent = 'No sessions yet — start the timer to begin tracking.';
+        logEl.appendChild(li);
+      } else {
+        sessionLog.slice(0, 20).forEach(s => {
+          const li = document.createElement('li');
+          const label = s.mode === 'work' ? '📖 Study session' : (s.mode === 'long' ? '☕ Long break' : '☕ Short break');
+          const partialTag = s.partial ? ' <span style="color:var(--subtext); font-weight:400;">(stopped early)</span>' : '';
+          li.innerHTML = `
+            <div>
+              <div class="s-type">${label}${partialTag}</div>
+              <div class="s-time">${s.date} · ${s.timeLabel}</div>
+            </div>
+            <div class="s-dur">${s.minutes} min</div>
+          `;
+          logEl.appendChild(li);
+        });
+      }
+    }
+  }
+
+  /* =========================================================
+     COMPLETION ANALYTICS
+  ========================================================= */
+  let completionCharts = [];
+  let tasksByDayChart = null;
+
+  function renderAnalytics() {
+    const completed = tasks.filter(t => t.done).length;
+    const notCompleted = tasks.length - completed;
+
+    completionCharts.forEach(c => c.destroy());
+    completionCharts = [];
+    document.querySelectorAll('.completionChartEl').forEach(canvas => {
+      const chart = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed', 'Not completed'],
+          datasets: [{
+            data: [completed, notCompleted],
+            backgroundColor: ['#4a6bff', '#e2e5ee']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+      completionCharts.push(chart);
+    });
+
+    const byDayCanvas = document.getElementById('tasksByDayChart');
+    if (byDayCanvas) {
+      const last7 = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        last7.push({ key, label: d.toLocaleDateString([], {weekday:'short'}) });
+      }
+      const completedCounts = last7.map(d => tasks.filter(t => t.date === d.key && t.done).length);
+      const pendingCounts = last7.map(d => tasks.filter(t => t.date === d.key && !t.done).length);
+
+      if (tasksByDayChart) tasksByDayChart.destroy();
+      tasksByDayChart = new Chart(byDayCanvas, {
+        type: 'bar',
+        data: {
+          labels: last7.map(d => d.label),
+          datasets: [
+            { label: 'Completed', data: completedCounts, backgroundColor: '#4a6bff' },
+            { label: 'Not completed', data: pendingCounts, backgroundColor: '#e2e5ee' }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'top' } },
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+    }
+  }
+
+  /* =========================================================
+     CALENDAR
+  ========================================================= */
+  let calViewDate = new Date();
+  let selectedDate = todayStr();
+
+  function changeMonth(delta) {
+    calViewDate.setMonth(calViewDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const year = calViewDate.getFullYear();
+    const month = calViewDate.getMonth();
+    document.getElementById('calTitle').textContent = calViewDate.toLocaleDateString([], {month:'long', year:'numeric'});
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'cal-dow';
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+      const el = document.createElement('div');
+      el.className = 'cal-day empty';
+      grid.appendChild(el);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = year + '-' + String(month+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+      const el = document.createElement('div');
+      el.className = 'cal-day';
+      if (dateKey === todayStr()) el.classList.add('today');
+      if (dateKey === selectedDate) el.classList.add('selected');
+
+      const hasTasks = tasks.some(t => t.date === dateKey);
+      el.innerHTML = `<span>${day}</span>` + (hasTasks ? '<div class="dot"></div>' : '');
+      el.onclick = () => { selectedDate = dateKey; renderCalendar(); };
+      grid.appendChild(el);
+    }
+
+    // Side panel: tasks for selected date
+    const sideTitle = document.getElementById('calSideTitle');
+    const dayTasksList = document.getElementById('calDayTasks');
+    const niceDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+    sideTitle.textContent = `Tasks for ${niceDate}`;
+
+    const dayTasks = tasks.filter(t => t.date === selectedDate);
+    dayTasksList.innerHTML = '';
+    if (dayTasks.length === 0) {
+      const p = document.createElement('li');
+      p.className = 'empty-note';
+      p.textContent = 'No tasks assigned to this day.';
+      dayTasksList.appendChild(p);
+    } else {
+      dayTasks.forEach(task => {
+        const li = document.createElement('li');
+        if (task.done) li.classList.add('done');
+        li.innerHTML = `
+          <span class="task-text" style="cursor:pointer">${escapeHtml(task.text)}</span>
+          <div class="task-actions">
+            <button title="Toggle done">✅</button>
+            <button title="Delete">🗑️</button>
+          </div>
+        `;
+        li.querySelector('.task-text').onclick = () => toggleTask(task.id);
+        const [doneBtn, delBtn] = li.querySelectorAll('.task-actions button');
+        doneBtn.onclick = () => toggleTask(task.id);
+        delBtn.onclick = () => deleteTask(task.id);
+        dayTasksList.appendChild(li);
+      });
+    }
+  }
+
+  /* =========================================================
+     MASTER RENDER
+  ========================================================= */
+  function renderAll() {
+    renderTasks();
+    updateClock();
+    renderAnalytics();
+    renderCalendar();
+  }
+
+  updateTimerDisplay();
+  renderTimerStats();
+  renderAll();
+
+  /* =========================================================
+     GAMES
+  ========================================================= */
+  function switchGame(gameName, btnEl) {
+    document.querySelectorAll('.game-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('game-' + gameName).classList.add('active');
+    document.querySelectorAll('.game-tab-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    if (gameName === 'snake' && !snakeStarted) startSnake();
+    if (gameName === 'g2048' && !g2048Started) startG2048();
+  }
+
+  /* ---------- Tic Tac Toe ---------- */
+  let tttBoard = Array(9).fill(null);
+  let tttTurn = 'X';
+  let tttOver = false;
+
+  function renderTTT() {
+    const grid = document.getElementById('tttGrid');
+    grid.innerHTML = '';
+    tttBoard.forEach((val, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'ttt-cell';
+      cell.textContent = val || '';
+      cell.onclick = () => tttMove(i);
+      grid.appendChild(cell);
+    });
+  }
+
+  function tttMove(i) {
+    if (tttOver || tttBoard[i]) return;
+    tttBoard[i] = tttTurn;
+    const winner = tttWinner();
+    if (winner) {
+      document.getElementById('tttStatus').textContent = `Player ${winner} wins! 🎉`;
+      tttOver = true;
+    } else if (tttBoard.every(c => c)) {
+      document.getElementById('tttStatus').textContent = `It's a draw!`;
+      tttOver = true;
+    } else {
+      tttTurn = tttTurn === 'X' ? 'O' : 'X';
+      document.getElementById('tttStatus').textContent = `Player ${tttTurn}'s turn`;
+    }
+    renderTTT();
+  }
+
+  function tttWinner() {
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (const [a,b,c] of lines) {
+      if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c]) return tttBoard[a];
+    }
+    return null;
+  }
+
+  function resetTTT() {
+    tttBoard = Array(9).fill(null);
+    tttTurn = 'X';
+    tttOver = false;
+    document.getElementById('tttStatus').textContent = `Player X's turn`;
+    renderTTT();
+  }
+  resetTTT();
+
+  /* ---------- Memory Match ---------- */
+  const memoryEmojis = ['📚','✏️','🎯','⏰','☕','🧠'];
+  let memoryCards = [];
+  let memoryFlipped = [];
+  let memoryMatched = [];
+  let memoryMoves = 0;
+  let memoryLock = false;
+
+  function resetMemory() {
+    const deck = [...memoryEmojis, ...memoryEmojis];
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i+1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    memoryCards = deck;
+    memoryFlipped = [];
+    memoryMatched = [];
+    memoryMoves = 0;
+    memoryLock = false;
+    document.getElementById('memoryStatus').textContent = 'Moves: 0';
+    renderMemory();
+  }
+
+  function renderMemory() {
+    const grid = document.getElementById('memoryGrid');
+    grid.innerHTML = '';
+    memoryCards.forEach((emoji, i) => {
+      const card = document.createElement('div');
+      card.className = 'memory-card';
+      const isFlipped = memoryFlipped.includes(i) || memoryMatched.includes(i);
+      if (isFlipped) { card.classList.add('flipped'); card.textContent = emoji; }
+      if (memoryMatched.includes(i)) card.classList.add('matched');
+      card.onclick = () => memoryFlip(i);
+      grid.appendChild(card);
+    });
+  }
+
+  function memoryFlip(i) {
+    if (memoryLock || memoryFlipped.includes(i) || memoryMatched.includes(i)) return;
+    memoryFlipped.push(i);
+    renderMemory();
+    if (memoryFlipped.length === 2) {
+      memoryMoves++;
+      document.getElementById('memoryStatus').textContent = `Moves: ${memoryMoves}`;
+      const [a, b] = memoryFlipped;
+      if (memoryCards[a] === memoryCards[b]) {
+        memoryMatched.push(a, b);
+        memoryFlipped = [];
+        renderMemory();
+        if (memoryMatched.length === memoryCards.length) {
+          document.getElementById('memoryStatus').textContent = `Solved in ${memoryMoves} moves! 🎉`;
+        }
+      } else {
+        memoryLock = true;
+        setTimeout(() => {
+          memoryFlipped = [];
+          memoryLock = false;
+          renderMemory();
+        }, 700);
+      }
+    }
+  }
+  resetMemory();
+
+  /* ---------- Rock Paper Scissors ---------- */
+  let rpsWins = 0, rpsLosses = 0;
+  function playRPS(choice) {
+    const options = ['✊','✋','✌️'];
+    const comp = options[Math.floor(Math.random() * 3)];
+    let result;
+    if (choice === comp) result = "It's a tie!";
+    else if (
+      (choice === '✊' && comp === '✌️') ||
+      (choice === '✋' && comp === '✊') ||
+      (choice === '✌️' && comp === '✋')
+    ) { result = 'You win! 🎉'; rpsWins++; }
+    else { result = 'Computer wins!'; rpsLosses++; }
+
+    document.getElementById('rpsResult').textContent = `You: ${choice}  vs  Computer: ${comp} — ${result}`;
+    document.getElementById('rpsScore').textContent = `You: ${rpsWins} — Computer: ${rpsLosses}`;
+  }
+  function resetRPS() {
+    rpsWins = 0; rpsLosses = 0;
+    document.getElementById('rpsScore').textContent = `You: 0 — Computer: 0`;
+    document.getElementById('rpsResult').textContent = 'Pick one!';
+  }
+
+  /* ---------- Snake ---------- */
+  let snakeStarted = false;
+  let snakeCtx, snakeInterval;
+  let snakeBody, snakeDir, snakeFood, snakeScore, snakeGridSize = 16, snakeCell = 20;
+
+  function startSnake() {
+    snakeStarted = true;
+    const canvas = document.getElementById('snakeCanvas');
+    snakeCtx = canvas.getContext('2d');
+    snakeBody = [{x:8,y:8},{x:7,y:8},{x:6,y:8}];
+    snakeDir = {x:1,y:0};
+    snakeScore = 0;
+    document.getElementById('snakeScore').textContent = 'Score: 0';
+    placeSnakeFood();
+    if (snakeInterval) clearInterval(snakeInterval);
+    snakeInterval = setInterval(snakeTick, 120);
+  }
+
+  function placeSnakeFood() {
+    snakeFood = { x: Math.floor(Math.random()*snakeGridSize), y: Math.floor(Math.random()*snakeGridSize) };
+  }
+
+  function snakeTick() {
+    const head = { x: snakeBody[0].x + snakeDir.x, y: snakeBody[0].y + snakeDir.y };
+
+    if (head.x < 0 || head.y < 0 || head.x >= snakeGridSize || head.y >= snakeGridSize ||
+        snakeBody.some(s => s.x === head.x && s.y === head.y)) {
+      clearInterval(snakeInterval);
+      snakeStarted = false;
+      snakeCtx.fillStyle = 'rgba(0,0,0,0.5)';
+      snakeCtx.fillRect(0,0,320,320);
+      snakeCtx.fillStyle = 'white';
+      snakeCtx.font = '20px Segoe UI';
+      snakeCtx.textAlign = 'center';
+      snakeCtx.fillText('Game Over — click Restart', 160, 160);
+      return;
+    }
+
+    snakeBody.unshift(head);
+    if (head.x === snakeFood.x && head.y === snakeFood.y) {
+      snakeScore++;
+      document.getElementById('snakeScore').textContent = 'Score: ' + snakeScore;
+      placeSnakeFood();
+    } else {
+      snakeBody.pop();
+    }
+    drawSnake();
+  }
+
+  function drawSnake() {
+    snakeCtx.fillStyle = getComputedStyle(document.body).getPropertyValue('--muted-bg');
+    snakeCtx.fillRect(0,0,320,320);
+    snakeCtx.fillStyle = '#4a6bff';
+    snakeBody.forEach(s => snakeCtx.fillRect(s.x*snakeCell, s.y*snakeCell, snakeCell-2, snakeCell-2));
+    snakeCtx.fillStyle = '#ff6b6b';
+    snakeCtx.fillRect(snakeFood.x*snakeCell, snakeFood.y*snakeCell, snakeCell-2, snakeCell-2);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (!document.getElementById('view-games').classList.contains('active')) return;
+    if (!document.getElementById('game-snake').classList.contains('active')) return;
+    if (e.key === 'ArrowUp' && snakeDir.y !== 1) snakeDir = {x:0,y:-1};
+    if (e.key === 'ArrowDown' && snakeDir.y !== -1) snakeDir = {x:0,y:1};
+    if (e.key === 'ArrowLeft' && snakeDir.x !== 1) snakeDir = {x:-1,y:0};
+    if (e.key === 'ArrowRight' && snakeDir.x !== -1) snakeDir = {x:1,y:0};
+  });
+
+  /* ---------- 2048 ---------- */
+  let g2048Started = false;
+  let g2048Board, g2048Score;
+
+  function startG2048() {
+    g2048Started = true;
+    g2048Board = Array.from({length:4}, () => Array(4).fill(0));
+    g2048Score = 0;
+    document.getElementById('g2048Score').textContent = 'Score: 0';
+    addG2048Tile(); addG2048Tile();
+    renderG2048();
+  }
+
+  function addG2048Tile() {
+    const empty = [];
+    for (let r=0;r<4;r++) for (let c=0;c<4;c++) if (g2048Board[r][c]===0) empty.push([r,c]);
+    if (!empty.length) return;
+    const [r,c] = empty[Math.floor(Math.random()*empty.length)];
+    g2048Board[r][c] = Math.random() < 0.9 ? 2 : 4;
+  }
+
+  function renderG2048() {
+    const grid = document.getElementById('g2048Grid');
+    grid.innerHTML = '';
+    const colors = {2:'#e8ecff',4:'#c9d5ff',8:'#a8bcff',16:'#8aa3ff',32:'#6b86ff',64:'#4a6bff',128:'#3854e0',256:'#2c44c9',512:'#22369e',1024:'#1a2a7a',2048:'#141f5c'};
+    for (let r=0;r<4;r++) for (let c=0;c<4;c++) {
+      const val = g2048Board[r][c];
+      const cell = document.createElement('div');
+      cell.className = 'g2048-cell';
+      if (val) {
+        cell.textContent = val;
+        cell.style.background = colors[val] || '#141f5c';
+        cell.style.color = val <= 4 ? '#1c2130' : 'white';
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  function slideRow(row) {
+    let arr = row.filter(v => v);
+    for (let i=0; i<arr.length-1; i++) {
+      if (arr[i] === arr[i+1]) {
+        arr[i] *= 2;
+        g2048Score += arr[i];
+        arr[i+1] = 0;
+      }
+    }
+    arr = arr.filter(v => v);
+    while (arr.length < 4) arr.push(0);
+    return arr;
+  }
+
+  function g2048Move(dir) {
+    if (!g2048Started) return;
+    let moved = false;
+    const before = JSON.stringify(g2048Board);
+
+    for (let i=0;i<4;i++) {
+      let line;
+      if (dir === 'left') line = g2048Board[i];
+      if (dir === 'right') line = [...g2048Board[i]].reverse();
+      if (dir === 'up') line = [0,1,2,3].map(r => g2048Board[r][i]);
+      if (dir === 'down') line = [3,2,1,0].map(r => g2048Board[r][i]);
+
+      const newLine = slideRow(line);
+
+      if (dir === 'left') g2048Board[i] = newLine;
+      if (dir === 'right') g2048Board[i] = [...newLine].reverse();
+      if (dir === 'up') [0,1,2,3].forEach((r,idx) => g2048Board[r][i] = newLine[idx]);
+      if (dir === 'down') [3,2,1,0].forEach((r,idx) => g2048Board[r][i] = newLine[idx]);
+    }
+
+    if (JSON.stringify(g2048Board) !== before) {
+      moved = true;
+      addG2048Tile();
+    }
+    document.getElementById('g2048Score').textContent = 'Score: ' + g2048Score;
+    renderG2048();
+    return moved;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (!document.getElementById('view-games') || !document.getElementById('view-games').classList.contains('active')) return;
+    if (!document.getElementById('game-g2048').classList.contains('active')) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); g2048Move('left'); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); g2048Move('right'); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); g2048Move('up'); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); g2048Move('down'); }
+  });
+</script>
+
+</body>
+</html>

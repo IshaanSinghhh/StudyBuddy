@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyBuddy — Sign In</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --panel: #ffffff;
+    --border: #eaecf2;
+    --text: #1c2130;
+    --subtext: #8b91a3;
+    --muted-bg: #f2f4fa;
+    --accent: #4a6bff;
+    --accent-dark: #3854e0;
+    --input-border: #e2e5ee;
+    --error: #e0455f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .auth-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 920px;
+    width: 100%;
+    background: var(--panel);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(20,20,50,0.08);
+    border: 1px solid var(--border);
+  }
+
+  /* Left panel — brand side */
+  .brand-panel {
+    background: linear-gradient(160deg, #5b7cff, #3854e0);
+    color: white;
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .brand-panel .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 20px; }
+  .brand-panel h2 { font-size: 26px; margin-top: 30px; line-height: 1.3; }
+  .brand-panel p { font-size: 14px; opacity: 0.9; margin-top: 10px; line-height: 1.5; }
+  .brand-panel .feature-list { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
+  .brand-panel .feature-list div { font-size: 13px; display: flex; align-items: center; gap: 10px; opacity: 0.95; }
+
+  /* Right panel — form side */
+  .form-panel { padding: 48px 44px; display: flex; flex-direction: column; justify-content: center; }
+
+  .tabs { display: flex; gap: 6px; background: var(--muted-bg); border-radius: 10px; padding: 4px; margin-bottom: 26px; }
+  .tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 9px 0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--subtext);
+    background: none;
+    border: none;
+  }
+  .tab-btn.active { background: var(--panel); color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  .form-panel h1 { font-size: 22px; margin-bottom: 4px; }
+  .form-panel .subtext { color: var(--subtext); font-size: 13px; margin-bottom: 24px; }
+
+  .field { margin-bottom: 16px; }
+  .field label { font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px; }
+  .field input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--input-border);
+    border-radius: 9px;
+    font-size: 14px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .field .error-msg { color: var(--error); font-size: 12px; margin-top: 5px; display: none; }
+  .field.invalid input { border-color: var(--error); }
+  .field.invalid .error-msg { display: block; }
+
+  .row-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 13px; }
+  .remember-me { display: flex; align-items: center; gap: 6px; color: var(--subtext); }
+  .forgot-link { color: var(--accent); font-weight: 600; text-decoration: none; cursor: pointer; }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 13px;
+    border-radius: 9px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .submit-btn:hover { background: var(--accent-dark); }
+
+  .form-footer { text-align: center; font-size: 13px; color: var(--subtext); margin-top: 18px; }
+  .form-footer a { color: var(--accent); font-weight: 700; text-decoration: none; }
+
+  .top-banner {
+    display: none;
+    background: #fdecec;
+    color: var(--error);
+    border: 1px solid #f6c6cd;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .top-banner.show { display: block; }
+
+  .success-banner {
+    display: none;
+    background: #e9fbef;
+    color: #1e8a4c;
+    border: 1px solid #bdeccb;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .success-banner.show { display: block; }
+
+  @media (max-width: 720px) {
+    .auth-wrap { grid-template-columns: 1fr; }
+    .brand-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="auth-wrap">
+
+  <!-- Left brand panel -->
+  <div class="brand-panel">
+    <div class="brand">🎓 Study<span style="opacity:.85">Buddy</span></div>
+    <div>
+      <h2>Plan smarter. Study better. Stay consistent.</h2>
+      <p>Track tasks, run focus sessions, and see your progress — all in one place.</p>
+      <div class="feature-list">
+        <div>✅ Task planner with due dates</div>
+        <div>⏱️ Built-in Pomodoro focus timer</div>
+        <div>📊 Weekly study analytics</div>
+        <div>📅 Calendar view of everything due</div>
+      </div>
+    </div>
+    <div style="font-size:12px; opacity:.75;">Free to use · No credit card required</div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="form-panel">
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Log In</button>
+      <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <div class="top-banner" id="errorBanner"></div>
+    <div class="success-banner" id="successBanner"></div>
+
+    <!-- ===== Login Form ===== -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <h1>Welcome back</h1>
+      <p class="subtext">Log in to pick up where you left off.</p>
+
+      <div class="field" id="loginEmailField">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com">
+        <div class="error-msg">Enter a valid email address.</div>
+      </div>
+
+      <div class="field" id="loginPasswordField">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password">
+        <div class="error-msg">Password is required.</div>
+      </div>
+
+      <div class="row-between">
+        <label class="remember-me"><input type="checkbox" id="rememberMe"> Remember me</label>
+        <a class="forgot-link" onclick="alert('Password reset will be available once the backend is connected.')">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="submit-btn">Log In</button>
+
+      <div class="form-footer">Don't have an account? <a onclick="switchTab('signup')">Sign up</a></div>
+    </form>
+
+    <!-- ===== Signup Form ===== -->
+    <form id="signupForm" onsubmit="handleSignup(event)" style="display:none;">
+      <h1>Create your account</h1>
+      <p class="subtext">Takes less than a minute.</p>
+
+      <div class="field" id="signupNameField">
+        <label>Full name</label>
+        <input type="text" id="signupName" placeholder="Your name">
+        <div class="error-msg">Please enter your name.</div>
+      </div>
+
+      <div class="field" id="signupEmailField">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com">
+        <div class="error-msg">Enter a valid email address.</div>
+      </div>
+
+      <div class="field" id="signupPasswordField">
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="At least 6 characters">
+        <div class="error-msg">Password must be at least 6 characters.</div>
+      </div>
+
+      <div class="field" id="signupConfirmField">
+        <label>Confirm password</label>
+        <input type="password" id="signupConfirm" placeholder="Re-enter your password">
+        <div class="error-msg">Passwords don't match.</div>
+      </div>
+
+      <button type="submit" class="submit-btn">Create Account</button>
+
+      <div class="form-footer">Already have an account? <a onclick="switchTab('login')">Log in</a></div>
+    </form>
+
+  </div>
+</div>
+
+<script>
+  function switchTab(tab) {
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+    hideBanners();
+  }
+
+  function hideBanners() {
+    document.getElementById('errorBanner').classList.remove('show');
+    document.getElementById('successBanner').classList.remove('show');
+  }
+
+  function showError(msg) {
+    const b = document.getElementById('errorBanner');
+    b.textContent = msg;
+    b.classList.add('show');
+    document.getElementById('successBanner').classList.remove('show');
+  }
+
+  function showSuccess(msg) {
+    const b = document.getElementById('successBanner');
+    b.textContent = msg;
+    b.classList.add('show');
+    document.getElementById('errorBanner').classList.remove('show');
+  }
+
+  function setInvalid(fieldId, invalid) {
+    document.getElementById(fieldId).classList.toggle('invalid', invalid);
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  /* ===== Login ===== */
+  function handleLogin(e) {
+    e.preventDefault();
+    hideBanners();
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    let valid = true;
+    const emailOk = isValidEmail(email);
+    setInvalid('loginEmailField', !emailOk);
+    if (!emailOk) valid = false;
+
+    const passOk = password.length > 0;
+    setInvalid('loginPasswordField', !passOk);
+    if (!passOk) valid = false;
+
+    if (!valid) return;
+
+    // TODO: replace with real API call once the Flask backend exists:
+    // fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'},
+    //   body: JSON.stringify({ email, password }) })
+    //   .then(r => r.json())
+    //   .then(data => { if (data.success) window.location.href = 'studybuddy.html'; else showError(data.message); });
+
+    showSuccess('Logged in! Redirecting...');
+    setTimeout(() => { window.location.href = 'studybuddy.html'; }, 800);
+  }
+
+  /* ===== Signup ===== */
+  function handleSignup(e) {
+    e.preventDefault();
+    hideBanners();
+
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const confirm = document.getElementById('signupConfirm').value;
+
+    let valid = true;
+
+    const nameOk = name.length > 0;
+    setInvalid('signupNameField', !nameOk);
+    if (!nameOk) valid = false;
+
+    const emailOk = isValidEmail(email);
+    setInvalid('signupEmailField', !emailOk);
+    if (!emailOk) valid = false;
+
+    const passOk = password.length >= 6;
+    setInvalid('signupPasswordField', !passOk);
+    if (!passOk) valid = false;
+
+    const confirmOk = confirm === password && password.length > 0;
+    setInvalid('signupConfirmField', !confirmOk);
+    if (!confirmOk) valid = false;
+
+    if (!valid) return;
+
+    // TODO: replace with real API call once the Flask backend exists:
+    // fetch('/api/register', { method: 'POST', headers: {'Content-Type':'application/json'},
+    //   body: JSON.stringify({ name, email, password }) })
+    //   .then(r => r.json())
+    //   .then(data => { if (data.success) window.location.href = 'studybuddy.html'; else showError(data.message); });
+
+    showSuccess('Account created! Redirecting...');
+    setTimeout(() => { window.location.href = 'studybuddy.html'; }, 800);
+  }
+</script>
+
+</body>
+</html>
